@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "How many runs did New Zealand Score in today's cricket match?"
+    },
+    {
+      "role": "assistant",
+      "content": "Ved, according to the search results, New Zealand scored 183 for 5 in today's cricket match against Afghanistan."
+    }
+  ]
+}

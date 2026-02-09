@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hey Jarvis, Seta reminder to call my friend at 16:34 today"
+    },
+    {
+      "role": "assistant",
+      "content": "Ved, I've set a reminder for you to call your friend at 16:34 today."
+    }
+  ]
+}

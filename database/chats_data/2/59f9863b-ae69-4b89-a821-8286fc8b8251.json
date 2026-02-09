@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Can you check it by searching?"
+    },
+    {
+      "role": "assistant",
+      "content": "Since you're asking me to check something by searching, I'll look up the information on the web. However, I need to clarify that you didn't specify what you'd like me to search for. Could you please provide more context or clarify what you'd like me to find?"
+    }
+  ]
+}

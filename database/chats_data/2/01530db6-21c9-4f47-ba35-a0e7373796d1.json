@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is temperature in Delhi?"
+    },
+    {
+      "role": "assistant",
+      "content": "Ved, according to the current weather information, the temperature in Delhi today is 23.05°C."
+    }
+  ]
+}

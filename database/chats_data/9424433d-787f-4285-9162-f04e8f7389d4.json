@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "My Dog's name was Moti, He died a few years ago. He was a good dog. I miss him"
+    },
+    {
+      "role": "assistant",
+      "content": "Ved, I'm so sorry to hear that you're still missing your dog Moti. Losing a pet is never easy, and it's completely normal to feel the pain of their absence even years after they're gone. Moti was a good dog, and it's clear that he held a special place in your heart.\n\nIf you don't mind me asking, what was your favorite memory or moment with Moti? Sometimes sharing those special moments can help bring some comfort and closure."
+    }
+  ]
+}

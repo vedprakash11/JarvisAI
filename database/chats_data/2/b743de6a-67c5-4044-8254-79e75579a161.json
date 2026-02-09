@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hey Jarvis what's temperature today in delhi"
+    },
+    {
+      "role": "assistant",
+      "content": "Ved, according to the current weather information, the temperature in Delhi today is around 15°C."
+    }
+  ]
+}

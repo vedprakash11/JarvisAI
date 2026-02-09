@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hey who one today's cricket match between australia and Afghanistan?"
+    },
+    {
+      "role": "assistant",
+      "content": "Unfortunately, I couldn't find any information about a recent cricket match between Australia and Afghanistan as my knowledge cutoff is 01 December 2023, and the date of the match you're referring to (08 February 2026) is after my cutoff."
+    }
+  ]
+}

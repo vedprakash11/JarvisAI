@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Thanks for remembering it"
+    },
+    {
+      "role": "assistant",
+      "content": "You're welcome, Ved. I'm glad I could recall that your dog's name was Moti. You mentioned that he was a good dog and you still miss him. Would you like to talk about something else or reminisce about your time with Moti?"
+    }
+  ]
+}

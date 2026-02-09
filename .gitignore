@@ -1,0 +1,65 @@
+# Environment and secrets (never commit)
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.test
+*.env
+venv/
+.venv/
+env/
+jarvisai/
+
+# Keys, credentials, certificates
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+credentials/
+*.credentials
+*.secret
+config.local.*
+*.token
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# FAISS / vector store (can be rebuilt)
+database/vector_store/*.faiss
+database/vector_store/*.pkl
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs (may contain request details)
+logs/
+*.log
+
+# Database dumps and local DB files (may contain user data)
+*.sql
+*.sqlite
+*.sqlite3
+*.db
+
+# Backup and temp (may contain secrets)
+*.bak
+*.backup
+*~
+.cache/
+
+# OS
+.DS_Store
+Thumbs.db

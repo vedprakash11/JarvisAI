@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hey"
+    },
+    {
+      "role": "assistant",
+      "content": "It seems like you said \"Hey.\" As I understand, you're using it as a casual greeting. I'd be happy to chat with you. What's on your mind, Ved?"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "What was my dog's Name?"
+    },
+    {
+      "role": "assistant",
+      "content": "According to my stored knowledge, your dog's name is Itus."
+    }
+  ]
+}

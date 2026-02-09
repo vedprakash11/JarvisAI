@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hey"
+    },
+    {
+      "role": "assistant",
+      "content": "Ved. What's on your mind today? Need help with an LLM model, perhaps a PyTorch project, or maybe some cloud-native ML architecture? Or maybe you're looking to break down a complex system design into something more digestible for your YouTube audience? Let me know how I can assist you."
+    }
+  ]
+}

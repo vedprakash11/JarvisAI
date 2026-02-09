@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0e14">
+  <title>Jarvis — Personal Assistant</title>
+  <style>
+    :root {
+      --bg: #0a0e14;
+      --bg-card: #0d1117;
+      --border: #21262d;
+      --border-glow: rgba(0, 212, 255, 0.25);
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #00d4ff;
+      --accent-dim: rgba(0, 212, 255, 0.6);
+      --green: #3fb950;
+      --input-bg: #010409;
+      --safe-bottom: env(safe-area-inset-bottom, 0);
+      --safe-top: env(safe-area-inset-top, 0);
+      --shadow-glow: 0 0 20px rgba(0, 212, 255, 0.15);
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; min-height: 100vh; }
+
+    /* ——— Auth (unchanged layout) ——— */
+    .auth-screen {
+      max-width: 400px; margin: 4rem auto; padding: 2rem;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+      box-shadow: var(--shadow-glow);
+    }
+    .auth-screen h1 { font-size: 1.5rem; margin-bottom: 1.5rem; color: var(--accent); font-weight: 600; letter-spacing: 0.02em; }
+    .auth-screen input {
+      width: 100%; padding: 0.75rem; margin-bottom: 1rem;
+      background: var(--input-bg); border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text); font-size: 16px;
+    }
+    .auth-screen button {
+      width: 100%; padding: 0.75rem; min-height: 44px;
+      background: var(--accent); color: #0a0e14;
+      border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: 600;
+    }
+    .auth-screen button:hover { opacity: 0.9; }
+    .auth-screen .toggle { margin-top: 1rem; text-align: center; }
+    .auth-screen .toggle a { color: var(--accent); cursor: pointer; padding: 0.5rem; display: inline-block; }
+    .auth-screen .error { color: #f85149; font-size: 0.9rem; margin-bottom: 0.5rem; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    /* ——— Dashboard (Jarvis HUD) ——— */
+    #dashboard {
+      display: none;
+      min-height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+    #dashboard.visible { display: block; }
+
+    /* Idle background: grid + subtle rings */
+    .jarvis-hud-bg {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background:
+        linear-gradient(180deg, transparent 0%, rgba(0,212,255,0.02) 50%, transparent 100%),
+        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.03) 2px, rgba(0,212,255,0.03) 4px),
+        repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,212,255,0.03) 2px, rgba(0,212,255,0.03) 4px);
+    }
+    .jarvis-hud-ring {
+      position: absolute; left: 50%; top: 50%;
+      width: min(90vmin, 420px); height: min(90vmin, 420px);
+      margin-left: -50%; margin-top: -50%;
+      border: 1px solid rgba(0,212,255,0.08);
+      border-radius: 50%;
+      animation: hudRingRotate 24s linear infinite;
+    }
+    .jarvis-hud-ring:nth-child(2) { width: 75%; height: 75%; margin-left: -37.5%; margin-top: -37.5%; animation-duration: 32s; animation-direction: reverse; }
+    .jarvis-hud-ring:nth-child(3) { width: 60%; height: 60%; margin-left: -30%; margin-top: -30%; animation-duration: 40s; }
+    @keyframes hudRingRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    /* ——— Status strip (top) ——— */
+    .jarvis-status-strip {
+      position: relative; z-index: 2;
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1.5rem;
+      padding: 0.6rem 1rem max(0.6rem, var(--safe-top));
+      background: rgba(13,17,23,0.85);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.75rem; color: var(--muted);
+    }
+    .jarvis-status-strip .strip-group { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .jarvis-status-strip .strip-item { display: flex; align-items: center; gap: 0.35rem; }
+    .jarvis-status-strip .strip-item .label { text-transform: uppercase; letter-spacing: 0.08em; }
+    .jarvis-status-strip .strip-item .value { color: var(--text); font-weight: 500; }
+    .jarvis-status-strip .strip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+    .jarvis-status-strip .strip-dot.listening { background: var(--green); animation: stripPulse 1s ease-in-out infinite; }
+    .jarvis-status-strip .strip-dot.processing { background: #d4a012; animation: stripPulse 0.8s ease-in-out infinite; }
+    .jarvis-status-strip .strip-dot.error { background: #f85149; }
+    @keyframes stripPulse { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 currentColor; } 50% { opacity: 0.8; } }
+
+    /* ——— Central AI Orb ——— */
+    .jarvis-orb-wrap {
+      position: relative; z-index: 2;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 38vh; padding: 2rem 1rem;
+    }
+    .jarvis-orb {
+      position: relative;
+      width: clamp(120px, 28vmin, 200px);
+      height: clamp(120px, 28vmin, 200px);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .jarvis-orb-ring {
+      position: absolute; inset: -15%; border-radius: 50%;
+      border: 2px solid;
+      opacity: 0.5;
+      animation: orbRingPulse 3s ease-in-out infinite;
+    }
+    .jarvis-orb-ring.r2 { inset: -30%; animation-delay: 0.5s; opacity: 0.35; }
+    .jarvis-orb-ring.r3 { inset: -45%; animation-delay: 1s; opacity: 0.2; }
+    .jarvis-orb-core {
+      position: relative; z-index: 1;
+      width: 55%; height: 55%;
+      border-radius: 50%;
+      box-shadow: 0 0 40px currentColor, inset 0 0 20px rgba(255,255,255,0.15);
+      animation: orbCorePulse 2.5s ease-in-out infinite;
+    }
+    /* Orb waveform (speaking) */
+    .jarvis-orb-waveform {
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      width: 140%; height: 140%;
+      display: none; align-items: center; justify-content: center; gap: 3px;
+    }
+    .jarvis-orb.state-speaking .jarvis-orb-waveform { display: flex; }
+    .jarvis-orb.state-speaking .jarvis-orb-ring { animation: orbWaveform 0.15s ease-in-out infinite; }
+    .jarvis-orb-waveform span {
+      width: 4px; height: 20px; border-radius: 2px;
+      background: currentColor; opacity: 0.9;
+      animation: orbBar 0.6s ease-in-out infinite alternate;
+    }
+    .jarvis-orb-waveform span:nth-child(1) { animation-delay: 0s; } .jarvis-orb-waveform span:nth-child(2) { animation-delay: 0.05s; }
+    .jarvis-orb-waveform span:nth-child(3) { animation-delay: 0.1s; } .jarvis-orb-waveform span:nth-child(4) { animation-delay: 0.15s; }
+    .jarvis-orb-waveform span:nth-child(5) { animation-delay: 0.2s; } .jarvis-orb-waveform span:nth-child(6) { animation-delay: 0.25s; }
+    .jarvis-orb-waveform span:nth-child(7) { animation-delay: 0.3s; } .jarvis-orb-waveform span:nth-child(8) { animation-delay: 0.35s; }
+    @keyframes orbBar { from { transform: scaleY(0.4); } to { transform: scaleY(1); } }
+    @keyframes orbWaveform { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+    @keyframes orbRingPulse { 0%, 100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.08); opacity: 0.7; } }
+    @keyframes orbCorePulse { 0%, 100% { opacity: 0.95; } 50% { opacity: 1; } }
+    /* Orb states: Idle (blue), Listening (green), Processing (yellow), Error (red) */
+    .jarvis-orb.state-idle .jarvis-orb-ring, .jarvis-orb.state-idle .jarvis-orb-core { color: var(--accent); }
+    .jarvis-orb.state-listening .jarvis-orb-ring, .jarvis-orb.state-listening .jarvis-orb-core { color: var(--green); }
+    .jarvis-orb.state-listening .jarvis-orb-ring { animation-duration: 1.5s; }
+    .jarvis-orb.state-processing .jarvis-orb-ring, .jarvis-orb.state-processing .jarvis-orb-core { color: #d4a012; }
+    .jarvis-orb.state-processing .jarvis-orb-ring { animation-duration: 1.2s; }
+    .jarvis-orb.state-speaking .jarvis-orb-ring, .jarvis-orb.state-speaking .jarvis-orb-core,
+    .jarvis-orb.state-speaking .jarvis-orb-waveform span { color: var(--accent); }
+    .jarvis-orb.state-error .jarvis-orb-ring, .jarvis-orb.state-error .jarvis-orb-core { color: #f85149; }
+    .jarvis-orb.state-error .jarvis-orb-ring { animation: orbErrorPulse 0.5s ease-in-out infinite; }
+    @keyframes orbErrorPulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+    .jarvis-orb-idle-quote {
+      margin-top: 1rem; font-size: 0.8rem; color: var(--muted); font-style: italic;
+      min-height: 1.2em;
+    }
+
+    /* ——— HUD Panels (Intent, Tasks, Memory, Conversation) ——— */
+    .jarvis-panels {
+      position: relative; z-index: 2;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 0.75rem;
+      max-width: 1200px; margin: 0 auto;
+      padding: 0 1rem 1rem;
+    }
+    .jarvis-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: var(--shadow-glow);
+    }
+    .jarvis-panel-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.5rem 0.75rem;
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-dim);
+      cursor: pointer; user-select: none;
+    }
+    .jarvis-panel-head:hover { background: rgba(0,212,255,0.05); }
+    .jarvis-panel-body { padding: 0.75rem; font-size: 0.85rem; color: var(--text); max-height: 160px; overflow-y: auto; }
+    .jarvis-panel-body.collapsed { display: none; }
+    .jarvis-panel .intent-path { font-family: monospace; font-size: 0.75rem; color: var(--muted); margin-top: 0.5rem; }
+    .jarvis-panel .task-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+    .jarvis-panel .task-item:last-child { border-bottom: none; }
+    .jarvis-panel .task-item .icon { color: var(--green); }
+    .jarvis-panel .task-item .icon.pending { color: #d4a012; }
+    .jarvis-panel .memory-item { font-size: 0.8rem; padding: 0.25rem 0; color: var(--muted); }
+
+    /* Proactive suggestion */
+    .jarvis-suggestion {
+      position: relative; z-index: 2;
+      max-width: 420px; margin: 0 auto 1rem;
+      padding: 0.6rem 1rem;
+      background: rgba(0,212,255,0.08);
+      border: 1px solid var(--border-glow);
+      border-radius: 10px;
+      font-size: 0.9rem; color: var(--text);
+      display: none;
+    }
+    .jarvis-suggestion.visible { display: block; animation: suggestIn 0.3s ease; }
+    @keyframes suggestIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    .jarvis-suggestion .suggest-label { font-size: 0.7rem; color: var(--accent-dim); text-transform: uppercase; margin-bottom: 0.25rem; }
+
+    /* Dev overlay */
+    .jarvis-dev-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(10,14,20,0.95);
+      padding: 1rem; font-size: 0.75rem; font-family: monospace;
+      overflow: auto; display: none;
+      border: 1px solid var(--border);
+    }
+    .jarvis-dev-overlay.visible { display: block; }
+    .jarvis-dev-overlay h3 { color: var(--accent); margin: 0 0 0.5rem; font-size: 0.85rem; }
+    .jarvis-dev-overlay pre { margin: 0 0 1rem; color: var(--muted); white-space: pre-wrap; }
+    .jarvis-dev-overlay .dev-close { position: absolute; top: 0.5rem; right: 0.5rem; background: var(--border); color: var(--text); border: none; padding: 0.35rem 0.6rem; cursor: pointer; border-radius: 4px; }
+
+    .jarvis-reminder-toast {
+      position: fixed;
+      bottom: max(4rem, calc(56px + var(--safe-bottom)));
+      left: 50%;
+      transform: translateX(-50%) translateY(120%);
+      z-index: 1100;
+      width: min(360px, calc(100vw - 2rem));
+      padding: 1rem 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-glow);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px var(--accent);
+      transition: transform 0.3s ease;
+      pointer-events: none;
+    }
+    .jarvis-reminder-toast.visible {
+      transform: translateX(-50%) translateY(0);
+      pointer-events: auto;
+    }
+    .jarvis-reminder-toast-body { font-size: 0.95rem; color: var(--text); margin-bottom: 0.75rem; }
+    .jarvis-reminder-toast-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+    .jarvis-reminder-toast-actions .header-btn { font-size: 0.8rem; }
+
+    .jarvis-hero { text-align: center; padding: 0.5rem 1rem; }
+    .jarvis-hero .jarvis-logo { font-size: 1rem; font-weight: 700; color: var(--accent); letter-spacing: 0.15em; text-transform: uppercase; }
+    .jarvis-time, .jarvis-greeting { display: none; }
+    .jarvis-status { max-width: 420px; margin: 0 auto; display: grid; gap: 0.75rem; }
+    .jarvis-status-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1rem 1.25rem;
+      text-align: left; box-shadow: var(--shadow-glow);
+    }
+    .jarvis-status-card h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-dim); margin: 0 0 0.35rem; }
+    .jarvis-status-card p { margin: 0; font-size: 0.95rem; color: var(--text); }
+    .jarvis-status-card a, .jarvis-status-card button {
+      background: none; border: none; font: inherit; color: var(--accent); cursor: pointer; padding: 0; margin-top: 0.5rem; text-decoration: none;
+    }
+    .jarvis-status-card a:hover, .jarvis-status-card button:hover { text-decoration: underline; }
+
+    .jarvis-footer {
+      position: fixed; bottom: max(1rem, var(--safe-bottom)); left: 0; right: 0;
+      display: flex; justify-content: center; align-items: center; gap: 1rem;
+      font-size: 0.85rem; color: var(--muted);
+      z-index: 10;
+    }
+    .jarvis-footer button {
+      background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.85rem;
+    }
+    .jarvis-footer button:hover { text-decoration: underline; }
+
+    /* ——— Floating chat button ——— */
+    #chatFab {
+      position: fixed;
+      bottom: max(1.5rem, calc(24px + var(--safe-bottom)));
+      right: 1.5rem;
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent) 0%, #0099cc 100%);
+      border: 2px solid var(--border-glow);
+      box-shadow: 0 4px 24px rgba(0, 212, 255, 0.4);
+      color: #0a0e14;
+      font-weight: 700;
+      font-size: 1.25rem;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 900;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    #chatFab.visible { display: flex; }
+    #chatFab:hover { transform: scale(1.05); box-shadow: 0 6px 28px rgba(0, 212, 255, 0.5); }
+    #chatFab:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* ——— Chat popup (Facebook-style) ——— */
+    #chatPopup {
+      display: none;
+      position: fixed;
+      bottom: max(1.5rem, calc(24px + var(--safe-bottom)));
+      right: 1.5rem;
+      width: 380px;
+      max-width: calc(100vw - 2rem);
+      height: min(80vh, 560px);
+      max-height: calc(100vh - 100px);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 8px 48px rgba(0,0,0,0.5), 0 0 0 1px var(--border-glow);
+      z-index: 1000;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #chatPopup.visible { display: flex; }
+    #chatPopup.fullscreen { bottom: 0; right: 0; width: 100%; max-width: 100%; height: 100%; max-height: 100%; border-radius: 0; }
+
+    .chat-popup-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-height: 48px;
+      padding: 0 0.75rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,0.3);
+      flex-shrink: 0;
+      flex-wrap: nowrap;
+    }
+    .chat-popup-header .jarvis-title {
+      font-weight: 700; color: var(--accent); letter-spacing: 0.05em;
+      margin-right: auto;
+      flex-shrink: 0;
+      line-height: 1.2;
+    }
+    .chat-popup-header .header-btn {
+      flex-shrink: 0;
+      min-width: 32px; height: 32px;
+      padding: 0 0.5rem;
+      background: transparent; border: 1px solid var(--border); color: var(--text);
+      border-radius: 6px; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 500;
+    }
+    .chat-popup-header .header-btn:hover { background: var(--border); color: var(--accent); }
+    .chat-popup-header .header-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    .chat-popup-modes {
+      display: inline-flex;
+      align-items: center;
+      gap: 0;
+      flex-shrink: 0;
+      height: 32px;
+    }
+    .chat-popup-modes button {
+      height: 32px;
+      min-width: 0;
+      padding: 0 0.5rem;
+      font-size: 0.75rem;
+      line-height: 1;
+      background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+      border-radius: 0; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .chat-popup-modes button:first-child { border-radius: 6px 0 0 6px; margin-right: -1px; }
+    .chat-popup-modes button:last-child { border-radius: 0 6px 6px 0; }
+    .chat-popup-modes button.active { background: var(--accent); color: #0a0e14; border-color: var(--accent); z-index: 1; }
+
+    .chat-popup-sessions {
+      max-height: 0; overflow: hidden; transition: max-height 0.2s ease;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .chat-popup-sessions.open { max-height: 180px; overflow-y: auto; }
+    .chat-popup-sessions .session-item {
+      padding: 0.6rem 1rem; cursor: pointer; border-bottom: 1px solid var(--border);
+      font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .chat-popup-sessions .session-item:hover { background: var(--bg-card); }
+    .chat-popup-sessions .session-item.active { color: var(--accent); }
+
+    #messages {
+      flex: 1; overflow-y: auto; padding: 1rem;
+      -webkit-overflow-scrolling: touch;
+    }
+    .msg { margin-bottom: 0.75rem; max-width: 92%; }
+    .msg.user { margin-left: auto; }
+    .msg .role { font-size: 0.7rem; color: var(--muted); margin-bottom: 0.2rem; }
+    .msg .content {
+      padding: 0.6rem 0.9rem; border-radius: 12px;
+      white-space: pre-wrap; word-break: break-word; font-size: 0.95rem; line-height: 1.45;
+    }
+    .msg.user .content { background: var(--accent); color: #0a0e14; }
+    .msg.assistant .content { background: var(--bg); border: 1px solid var(--border); }
+    .msg .confidence { font-size: 0.7rem; color: var(--muted); margin-top: 0.25rem; }
+    .msg .confidence.high { color: var(--green); }
+    .msg .confidence.medium { color: #d4a012; }
+    .msg .confidence.low { color: #f85149; }
+    .msg-loading .content { color: var(--muted); }
+    .msg-loading .typing-dots { display: inline-block; animation: pulse 1.2s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+    .msg-error .content { border-color: #f85149; background: rgba(248,81,73,0.08); }
+    .msg-error .retry-btn {
+      margin-top: 0.4rem; padding: 0.35rem 0.6rem; font-size: 0.85rem;
+      background: var(--accent); color: #0a0e14; border: none; border-radius: 6px; cursor: pointer;
+    }
+    .empty-state { text-align: center; color: var(--muted); padding: 2rem 0.75rem; font-size: 0.9rem; }
+
+    .chat-popup-input {
+      padding: 0.75rem 1rem; padding-bottom: max(0.75rem, var(--safe-bottom));
+      border-top: 1px solid var(--border);
+      display: flex; gap: 0.5rem; align-items: flex-end;
+      flex-shrink: 0; background: var(--bg);
+    }
+    .chat-popup-input textarea {
+      flex: 1; min-height: 44px; max-height: 120px; padding: 0.6rem 0.9rem;
+      background: var(--input-bg); border: 1px solid var(--border); border-radius: 10px;
+      color: var(--text); font-size: 15px; font-family: inherit; resize: none;
+    }
+    .chat-popup-input button.send-btn {
+      padding: 0.6rem 1rem; min-width: 48px; min-height: 44px;
+      background: var(--green); color: #fff;
+      border: none; border-radius: 10px; font-size: 0.95rem; cursor: pointer; flex-shrink: 0;
+    }
+    .chat-popup-input button.send-btn:hover { opacity: 0.9; }
+    .chat-popup-input button.send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .chat-popup-input .voice-btn { min-width: 40px; height: 44px; flex-shrink: 0; }
+    .chat-popup-input .voice-btn.listening { background: rgba(63, 185, 80, 0.2); color: var(--green); border-color: var(--green); }
+    .chat-popup-input .voice-btn .voice-icon { width: 20px; height: 20px; }
+    .chat-popup-input .voice-btn .voice-label { font-size: 0.7rem; margin-left: 0.25rem; }
+    @media (max-width: 360px) { .chat-popup-input .voice-btn .voice-label { display: none; } }
+
+    @media (max-width: 480px) {
+      #chatPopup { width: 100%; right: 0; bottom: 0; max-width: 100%; height: 85vh; border-radius: 16px 16px 0 0; }
+      #chatPopup.visible { border-radius: 16px 16px 0 0; }
+      #chatFab { right: 1rem; bottom: max(1rem, var(--safe-bottom)); }
+      .jarvis-panels { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="auth" class="auth-screen">
+    <h1>Jarvis</h1>
+    <div id="authError" class="error"></div>
+    <form id="authForm" role="form" aria-label="Login or register" onsubmit="return false;">
+      <label for="email" class="sr-only">Email</label>
+      <input type="email" id="email" placeholder="Email" autocomplete="email" aria-required="true">
+      <label for="password" class="sr-only">Password</label>
+      <input type="password" id="password" placeholder="Password" autocomplete="current-password" aria-required="true">
+      <label for="name" class="sr-only">Name (for registration)</label>
+      <input type="text" id="name" placeholder="Name (optional)" style="display:none" aria-label="Name (optional)">
+      <button type="button" id="authBtn">Login</button>
+      <p class="toggle"><a id="authToggle">Create account</a></p>
+    </form>
+  </div>
+
+  <div id="dashboard" aria-label="Jarvis dashboard">
+    <div class="jarvis-hud-bg" aria-hidden="true">
+      <div class="jarvis-hud-ring"></div>
+      <div class="jarvis-hud-ring"></div>
+      <div class="jarvis-hud-ring"></div>
+    </div>
+
+    <header class="jarvis-status-strip">
+      <div class="strip-group">
+        <div class="strip-item">
+          <span class="strip-dot" id="stripDot"></span>
+          <span class="label">Mode:</span>
+          <span class="value" id="stripMode">Waiting</span>
+        </div>
+        <div class="strip-item">
+          <span class="label">Wake word:</span>
+          <span class="value" id="stripWakeWord">ACTIVE</span>
+        </div>
+        <div class="strip-item">
+          <span class="label">Response:</span>
+          <span class="value" id="stripLatency">— ms</span>
+        </div>
+      </div>
+      <div class="strip-group">
+        <div class="strip-item">
+          <span class="label">Date & time</span>
+          <span class="value" id="stripDateTime">—</span>
+        </div>
+        <div class="strip-item">
+          <span class="label">Network</span>
+          <span class="value" id="stripNetwork">Online</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="jarvis-orb-wrap">
+      <div class="jarvis-orb state-idle" id="jarvisOrb" role="img" aria-label="Jarvis status">
+        <div class="jarvis-orb-ring"></div>
+        <div class="jarvis-orb-ring r2"></div>
+        <div class="jarvis-orb-ring r3"></div>
+        <div class="jarvis-orb-core"></div>
+        <div class="jarvis-orb-waveform" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+      <p class="jarvis-orb-idle-quote" id="orbIdleQuote">At your service.</p>
+    </div>
+
+    <div class="jarvis-suggestion" id="jarvisSuggestion">
+      <div class="suggest-label">Suggestion</div>
+      <div id="jarvisSuggestionText"></div>
+    </div>
+
+    <div class="jarvis-panels">
+      <div class="jarvis-panel">
+        <div class="jarvis-panel-head" data-panel="intent">
+          <span>Intent & reasoning</span>
+          <span aria-hidden="true">▼</span>
+        </div>
+        <div class="jarvis-panel-body" id="panelIntent">
+          <div id="intentDetected">—</div>
+          <div id="intentEntities" style="margin-top:0.35rem;"></div>
+          <div class="intent-path" id="intentPath">Voice → STT → Intent → Tool → Confirmation</div>
+        </div>
+      </div>
+      <div class="jarvis-panel">
+        <div class="jarvis-panel-head" data-panel="tasks">
+          <span>Active tasks</span>
+          <span aria-hidden="true">▼</span>
+        </div>
+        <div class="jarvis-panel-body" id="panelTasks">
+          <div class="task-item"><span class="icon">✓</span> Ready</div>
+          <div id="taskList"></div>
+        </div>
+      </div>
+      <div class="jarvis-panel">
+        <div class="jarvis-panel-head" data-panel="memory">
+          <span>Memory & context</span>
+          <span aria-hidden="true">▼</span>
+        </div>
+        <div class="jarvis-panel-body" id="panelMemory">
+          <div class="memory-item">Session: current</div>
+          <div class="memory-item" id="memoryPrefs">Remembers: preferences loaded in chat.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="jarvis-status" id="dashboardStatus" style="padding:0 1rem 1rem;">
+      <div class="jarvis-status-card" id="cardBrief" style="display:none">
+        <h3>Today's brief</h3>
+        <p id="briefPreview">Your daily brief is ready.</p>
+        <button type="button" id="btnOpenBrief">Open in chat</button>
+      </div>
+      <div class="jarvis-status-card" id="cardReminder" style="display:none">
+        <h3>Next reminder</h3>
+        <p id="reminderPreview">—</p>
+      </div>
+    </div>
+
+    <footer class="jarvis-footer">
+      <span id="userEmail"></span>
+      <button type="button" id="logout">Logout</button>
+    </footer>
+
+    <div class="jarvis-dev-overlay" id="jarvisDevOverlay">
+      <button type="button" class="dev-close" id="devOverlayClose">Close</button>
+      <h3>Token usage</h3>
+      <pre id="devTokens">—</pre>
+      <h3>Model</h3>
+      <pre id="devModel">—</pre>
+      <h3>Tool calls</h3>
+      <pre id="devTools">—</pre>
+      <h3>Errors / retries</h3>
+      <pre id="devErrors">—</pre>
+    </div>
+
+    <div class="jarvis-reminder-toast" id="reminderToast" role="alert" aria-live="assertive">
+      <div class="jarvis-reminder-toast-body" id="reminderToastBody"></div>
+      <div class="jarvis-reminder-toast-actions">
+        <button type="button" id="reminderToastPlay" class="header-btn">Play sound</button>
+        <button type="button" id="reminderToastDismiss" class="header-btn">Dismiss</button>
+      </div>
+    </div>
+  </div>
+
+  <button type="button" id="chatFab" aria-label="Talk to Jarvis">J</button>
+
+  <div id="chatPopup" role="dialog" aria-label="Chat with Jarvis">
+    <div class="chat-popup-header">
+      <span class="jarvis-title">Jarvis</span>
+      <button type="button" id="popupSessionsToggle" class="header-btn" aria-label="Toggle chat history">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <button type="button" id="popupNewChat" class="header-btn" aria-label="New chat">New</button>
+      <div class="chat-popup-modes">
+        <button type="button" id="modeGeneral" class="active">General</button>
+        <button type="button" id="modeRealtime">Realtime</button>
+      </div>
+      <button type="button" id="popupMinimize" class="header-btn" aria-label="Minimize chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19V5"/></svg>
+      </button>
+    </div>
+    <div class="chat-popup-sessions" id="popupSessionsList"></div>
+    <div id="messages"></div>
+    <div class="chat-popup-input">
+      <label for="input" class="sr-only">Message Jarvis</label>
+      <textarea id="input" placeholder="Message Jarvis…" rows="1" aria-label="Message Jarvis" maxlength="32000"></textarea>
+      <button type="button" id="voiceBtn" class="header-btn voice-btn" aria-label="Voice: say Hey Jarvis then your query" title="Say &quot;Hey Jarvis&quot; then your question">
+        <svg class="voice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        <span class="voice-label" id="voiceLabel">Voice</span>
+      </button>
+      <button type="button" id="send" class="send-btn" aria-label="Send">Send</button>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

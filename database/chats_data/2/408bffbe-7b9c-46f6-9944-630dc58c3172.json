@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "remind me in 3 minutes to call Mom"
+    },
+    {
+      "role": "assistant",
+      "content": "Done. I've set a reminder for 3 minutes from now: call Mom. You'll see it in the dashboard Alerts when it's time."
+    }
+  ]
+}

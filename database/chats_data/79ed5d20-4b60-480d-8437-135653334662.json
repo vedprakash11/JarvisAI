@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi I am Ved, How are you doing?"
+    },
+    {
+      "role": "assistant",
+      "content": "Hi Ved, I'm doing well, thanks for asking. I'm an AI, so I don't have feelings or emotions like humans do, but I'm functioning properly and ready to assist you. How can I help you today?"
+    }
+  ]
+}

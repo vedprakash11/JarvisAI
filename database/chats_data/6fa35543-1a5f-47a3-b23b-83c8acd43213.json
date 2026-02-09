@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "How are you?"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm functioning optimally, Ved. I've been reviewing our previous conversations and topics you've explored. I'm ready to assist you with any questions or projects you'd like to discuss. What's on your mind today?"
+    }
+  ]
+}

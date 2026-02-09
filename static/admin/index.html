@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JarvisAI Admin</title>
+  <link rel="stylesheet" href="admin.css?v=2" />
+</head>
+<body>
+  <div id="app">
+    <header class="header" role="banner">
+      <div class="header-brand">
+        <h1>JarvisAI Admin</h1>
+        <nav class="nav" aria-label="Dashboard sections" id="dashboardNav">
+          <a href="#overview" class="nav-link active" data-pane="overview">Overview</a>
+          <a href="#status" class="nav-link" data-pane="status">Status</a>
+          <a href="#usage" class="nav-link" data-pane="usage">Usage</a>
+          <a href="#requests" class="nav-link" data-pane="requests">Activity</a>
+        </nav>
+      </div>
+      <div class="header-actions">
+        <span id="userEmail" class="user-email" aria-label="Logged in as"></span>
+        <button type="button" id="logoutBtn" class="btn btn-ghost" aria-label="Log out">Log out</button>
+      </div>
+    </header>
+
+    <main id="main" class="main" role="main">
+      <!-- Login view -->
+      <section id="loginView" class="view" aria-labelledby="loginTitle">
+        <h2 id="loginTitle">Admin sign in</h2>
+        <p class="login-hint">Use your JarvisAI account. Only users listed in <code>ADMIN_EMAILS</code> can access the dashboard.</p>
+        <form id="loginForm" class="login-form" aria-label="Sign in">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required autocomplete="email" />
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password" />
+          <p id="loginError" class="error" role="alert" aria-live="polite"></p>
+          <button type="submit" id="loginBtn" class="btn btn-primary">Sign in</button>
+        </form>
+      </section>
+
+      <!-- Forbidden view -->
+      <section id="forbiddenView" class="view hidden" aria-labelledby="forbiddenTitle">
+        <h2 id="forbiddenTitle">Access denied</h2>
+        <p>Your account is not an admin. Add your email to <code>ADMIN_EMAILS</code> in <code>.env</code> to access this dashboard.</p>
+        <button type="button" id="forbiddenLogout" class="btn btn-primary">Sign out</button>
+      </section>
+
+      <!-- Dashboard view -->
+      <section id="dashboardView" class="view dashboard-view hidden" aria-labelledby="dashboardTitle">
+        <h2 id="dashboardTitle" class="sr-only">Dashboard</h2>
+
+        <!-- Overview pane -->
+        <div id="paneOverview" class="pane active">
+          <div class="insight-cards" id="insightCards">
+            <div class="skeleton" data-skeleton="overview"></div>
+          </div>
+          <div class="insights-grid">
+            <section class="card insight-card" aria-labelledby="insightHealthTitle">
+              <h3 id="insightHealthTitle">Health at a glance</h3>
+              <div id="insightHealth" class="insight-content"></div>
+            </section>
+            <section class="card insight-card" aria-labelledby="insightPeakTitle">
+              <h3 id="insightPeakTitle">Peak activity</h3>
+              <div id="insightPeak" class="insight-content"></div>
+            </section>
+            <section class="card insight-card" aria-labelledby="insightLatencyTitle">
+              <h3 id="insightLatencyTitle">Latency</h3>
+              <div id="insightLatency" class="insight-content"></div>
+            </section>
+            <section class="card insight-card" aria-labelledby="insightModeTitle">
+              <h3 id="insightModeTitle">Traffic by mode</h3>
+              <div id="insightMode" class="insight-content"></div>
+            </section>
+          </div>
+        </div>
+
+        <!-- Status pane -->
+        <div id="paneStatus" class="pane">
+          <section class="card" aria-labelledby="statusTitle">
+            <h3 id="statusTitle">System status</h3>
+            <div id="statusContent" class="card-content">
+              <div class="skeleton" data-skeleton="status"></div>
+            </div>
+            <div id="statusError" class="card-error hidden" role="alert"></div>
+          </section>
+        </div>
+
+        <!-- Usage pane -->
+        <div id="paneUsage" class="pane">
+          <section class="card card-wide" aria-labelledby="usageTitle">
+            <h3 id="usageTitle">Usage</h3>
+            <div class="range-tabs" role="tablist">
+              <button type="button" class="range-tab active" data-hours="24" aria-selected="true">24h</button>
+              <button type="button" class="range-tab" data-hours="6" aria-selected="false">6h</button>
+              <button type="button" class="range-tab" data-hours="168" aria-selected="false">7d</button>
+            </div>
+            <div id="usageContent" class="card-content">
+              <div class="skeleton" data-skeleton="usage"></div>
+            </div>
+            <div id="usageError" class="card-error hidden" role="alert"></div>
+          </section>
+          <section class="card card-wide" aria-labelledby="chartTitle">
+            <h3 id="chartTitle">Requests by hour</h3>
+            <div id="chartContent" class="card-content">
+              <div class="skeleton" data-skeleton="chart"></div>
+            </div>
+            <div id="chartError" class="card-error hidden" role="alert"></div>
+          </section>
+        </div>
+
+        <!-- Activity (requests) pane -->
+        <div id="paneRequests" class="pane">
+          <section class="card card-full" aria-labelledby="requestsTitle">
+            <h3 id="requestsTitle">Recent requests</h3>
+            <div id="requestsContent" class="card-content table-wrap">
+              <div class="skeleton" data-skeleton="requests"></div>
+            </div>
+            <div id="requestsError" class="card-error hidden" role="alert"></div>
+            <button type="button" id="loadMoreBtn" class="btn btn-ghost hidden">Load more</button>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer" role="contentinfo">
+      <p>JarvisAI Admin Dashboard. Ensure <code>python run.py</code> is running and <code>LOG_FILE</code> is set for usage data.</p>
+    </footer>
+  </div>
+  <script src="admin.js?v=2"></script>
+</body>
+</html>

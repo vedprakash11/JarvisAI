@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Yes Please"
+    },
+    {
+      "role": "assistant",
+      "content": "Yes Please is a 2014 book by American actress and television writer Amy Poehler. It's a collection of personal stories, funny bits, and real-life advice on topics such as sex, love, friendship, parenthood, and more. The book features chapters like \"Treat Your Career Like a Bad Boyfriend\" and \"The Robots Will Kill Us All,\" and also includes an acrostic poem about Tina Fey."
+    }
+  ]
+}

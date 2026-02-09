@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}JarvisAI Admin{% endblock %}</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --card: #1a2332;
+      --border: #2d3a4f;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --success: #3fb950;
+      --danger: #f85149;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0 1.5rem 1.5rem; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .header-brand { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
+    .header h1 { font-size: 1.25rem; margin: 0; color: var(--accent); font-weight: 600; }
+    .nav {
+      display: flex;
+      gap: 0.25rem;
+      align-items: center;
+    }
+    .nav-link {
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius);
+      color: var(--muted);
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav-link:hover { color: var(--text); background: rgba(255,255,255,0.06); text-decoration: none; }
+    .nav-link.active { background: var(--accent); color: #fff; }
+    @media (max-width: 768px) {
+      .header-brand { flex-direction: column; align-items: flex-start; }
+      .nav { width: 100%; overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
+      .nav-link { white-space: nowrap; flex-shrink: 0; }
+      .header-meta { justify-content: flex-start; }
+      .meta-strip { max-width: 100%; }
+      .meta-item .api-url { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
+    }
+    .header-meta {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+    .header-meta a { text-decoration: none; }
+    .header-meta a:hover { text-decoration: none; }
+    .meta-strip {
+      display: inline-flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.35rem 0.6rem 0.35rem 0.5rem;
+    }
+    .meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--muted);
+    }
+    .meta-item .meta-icon { display: inline-flex; align-items: center; justify-content: center; width: 1.1em; height: 1.1em; opacity: 0.85; }
+    .meta-item .meta-icon svg { width: 100%; height: 100%; }
+    .meta-item code, .meta-item .api-url {
+      font-size: 0.8em;
+      background: rgba(88, 166, 255, 0.12);
+      color: var(--accent);
+      padding: 0.15rem 0.45rem;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+    .meta-divider {
+      width: 1px;
+      height: 1rem;
+      background: var(--border);
+      margin: 0 0.1rem;
+      border-radius: 1px;
+    }
+    .meta-user {
+      color: var(--text);
+      font-weight: 500;
+    }
+    .meta-user .meta-icon { color: var(--success); }
+    .meta-logout {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      color: var(--muted);
+      transition: color 0.15s, background 0.15s;
+    }
+    .meta-logout:hover { color: var(--danger); background: rgba(248, 81, 73, 0.12); }
+    .meta-refresh {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.4rem;
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-style: italic;
+    }
+    .meta-refresh .meta-icon { opacity: 0.6; }
+    .meta-refresh-btn {
+      border: none;
+      background: none;
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+    }
+    .meta-refresh-btn:hover {
+      color: var(--accent);
+      background: rgba(88, 166, 255, 0.12);
+    }
+
+    .pane { display: none; padding-top: 1rem; }
+    .pane.active { display: block; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .card h2 { font-size: 1.1rem; margin: 0 0 0.75rem 0; color: var(--muted); font-weight: 600; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+    .stat { text-align: center; }
+    .stat .value { font-size: 1.75rem; font-weight: 700; color: var(--accent); }
+    .stat .label { font-size: 0.85rem; color: var(--muted); }
+    .ok { color: var(--success); }
+    .err { color: var(--danger); }
+    .meta { font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem; }
+    .charts-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+    .chart-card { margin-bottom: 0; }
+    .chart-card canvas { max-height: 220px; }
+
+    .summary-card { margin-bottom: 0; }
+    .summary-card h2 { margin-bottom: 0.5rem; }
+    .summary-list { margin: 0; padding-left: 1.25rem; font-size: 0.875rem; line-height: 1.8; color: var(--text); }
+    .summary-list li { margin-bottom: 0.25rem; }
+    .summary-list .highlight { color: var(--accent); font-weight: 600; }
+    .summary-list .muted { color: var(--muted); }
+
+    .usage-pack .card-compact { padding: 0.75rem 1rem; margin-bottom: 0.75rem; }
+    .usage-pack .card-compact h2, .usage-pack .card-compact h3 { font-size: 0.9375rem; margin: 0 0 0.5rem; }
+    .usage-pack .grid-tight { gap: 0.5rem; margin-bottom: 0; grid-template-columns: repeat(6, 1fr); }
+    @media (max-width: 700px) { .usage-pack .grid-tight { grid-template-columns: repeat(3, 1fr); } }
+    .charts-pack { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; margin-bottom: 0.75rem; }
+    .charts-pack-2 { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 500px) { .charts-pack-2 { grid-template-columns: 1fr; } }
+    .usage-pack .chart-card-sm { padding: 0.6rem 0.75rem; margin-bottom: 0; }
+    .usage-pack .chart-wrap { position: relative; height: 100px; min-height: 100px; }
+    .charts-pack > .chart-card-sm:nth-child(1) .chart-wrap,
+    .charts-pack > .chart-card-sm:nth-child(2) .chart-wrap { height: 120px; min-height: 120px; }
+
+    .insight-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .insight-kpi {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      text-align: center;
+    }
+    .insight-kpi .kpi-value { font-size: 1.75rem; font-weight: 700; color: var(--accent); line-height: 1.2; }
+    .insight-kpi .kpi-label { font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem; }
+    .insight-kpi.success .kpi-value { color: var(--success); }
+    .insight-kpi.danger .kpi-value { color: var(--danger); }
+    .insights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .insight-card h3 { font-size: 0.9375rem; margin: 0 0 0.5rem; color: var(--muted); font-weight: 600; }
+    .insight-content { font-size: 0.875rem; line-height: 1.6; }
+    .insight-content .highlight { color: var(--accent); font-weight: 600; }
+    .insight-content .muted { color: var(--muted); }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; }
+    .query-cell { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <header class="header" role="banner">
+    <div class="header-brand">
+      <h1>JarvisAI Admin</h1>
+      {% if current_user_email %}
+      <nav class="nav" aria-label="Dashboard sections">
+        <a href="#overview" class="nav-link active" data-pane="overview">Overview</a>
+        <a href="#status" class="nav-link" data-pane="status">Status</a>
+        <a href="#usage" class="nav-link" data-pane="usage">Usage</a>
+        <a href="#activity" class="nav-link" data-pane="activity">Activity</a>
+        <a href="#alerts" class="nav-link" data-pane="alerts">Alerts</a>
+        <a href="#brief" class="nav-link" data-pane="brief">Daily brief</a>
+      </nav>
+      {% endif %}
+    </div>
+    <div class="header-meta">
+      <div class="meta-strip">
+        <span class="meta-item">
+          <span class="meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
+          <span class="api-url">{{ api_url|default('—') }}</span>
+        </span>
+        {% if current_user_email %}
+        <span class="meta-divider" aria-hidden="true"></span>
+        <span class="meta-item meta-user">
+          <span class="meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+          <span>{{ current_user_email }}</span>
+        </span>
+        <span class="meta-divider" aria-hidden="true"></span>
+        <a href="{{ url_for('logout') }}" class="meta-item meta-logout">
+          <span class="meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
+          <span>Logout</span>
+        </a>
+        <span class="meta-divider" aria-hidden="true"></span>
+        <button type="button" class="meta-refresh meta-refresh-btn" onclick="window.location.reload()" title="Reload the page to see latest data">
+          <span class="meta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span>
+          <span>Refresh to update</span>
+        </button>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+  {% block content %}{% endblock %}
+  <script>
+    (function() {
+      function switchPane(paneId) {
+        document.querySelectorAll('.pane').forEach(function(el) { el.classList.remove('active'); });
+        document.querySelectorAll('.nav-link[data-pane]').forEach(function(el) { el.classList.remove('active'); });
+        var pane = document.getElementById('pane' + paneId.charAt(0).toUpperCase() + paneId.slice(1));
+        var link = document.querySelector('.nav-link[data-pane="' + paneId + '"]');
+        if (pane) pane.classList.add('active');
+        if (link) link.classList.add('active');
+      }
+      document.querySelectorAll('.nav-link[data-pane]').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          var pane = this.getAttribute('data-pane');
+          if (pane) switchPane(pane);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

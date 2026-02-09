@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Where so I work?"
+    },
+    {
+      "role": "assistant",
+      "content": "Ved, I don't have that information. The conversation has just started, and I don't have access to any external data or stored knowledge about your workplace. If you'd like to share your work details, I'm here to help with any questions you may have."
+    }
+  ]
+}

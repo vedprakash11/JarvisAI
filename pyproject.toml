@@ -1,0 +1,30 @@
+[project]
+name = "jarvisai"
+version = "1.0.0"
+description = "AI assistant with General (RAG) and Realtime (Tavily) chatbots"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311"]
+include = '\.pyi?$'
+exclude = '''
+/(\.git|jarvisai|\.venv|venv)/
+'''
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+select = ["E", "F", "I", "N", "W"]
+ignore = ["E501"]
+
+[tool.ruff.isort]
+known-first-party = ["app"]

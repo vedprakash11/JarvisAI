@@ -1,0 +1,20 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Set a reminder in 2 mins to Call Ved"
+    },
+    {
+      "role": "assistant",
+      "content": "Done. I've set a reminder for 2 minutes from now: Call Ved. You'll see it in the dashboard Alerts when it's time."
+    },
+    {
+      "role": "user",
+      "content": "Set a reminder in 1 mins to Call Ayush"
+    },
+    {
+      "role": "assistant",
+      "content": "Done. I've set a reminder for 1 minute from now: Call Ayush. You'll see it in the dashboard Alerts when it's time."
+    }
+  ]
+}

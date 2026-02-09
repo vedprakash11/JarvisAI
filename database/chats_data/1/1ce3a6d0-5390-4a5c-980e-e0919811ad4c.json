@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "How many runs did Afghanistan Score in today's cricket match?"
+    },
+    {
+      "role": "assistant",
+      "content": "However, the search results do not specify the date of the match you are referring to. But according to the search results, there is a mention of a match where Afghanistan scored 159-6 and 182-6. I'm assuming you are referring to the match where they scored 182 for 6."
+    }
+  ]
+}

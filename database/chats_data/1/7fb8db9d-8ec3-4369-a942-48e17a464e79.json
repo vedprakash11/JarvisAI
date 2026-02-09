@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Which company is am preparing for the interview?"
+    },
+    {
+      "role": "assistant",
+      "content": "You are preparing for an interview at Deloitte for a Data Scientist role."
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Latest news about AI today"
+    },
+    {
+      "role": "assistant",
+      "content": "Ved, I've got the latest news updates for you. \n\nAccording to search results, the latest news about AI today is that momentum is expected to continue through 2026. AI has moved from promise to real economic impact, with significant investments from major tech companies like Google, Amazon, and Meta.\n\nAdditionally, Elon Musk has warned that Earth's power grids are nearing collapse under the increasing demand for AI, arguing that space-based computing is now inevitable.\n\nWould you like more information on a specific aspect of AI news or updates?"
+    }
+  ]
+}

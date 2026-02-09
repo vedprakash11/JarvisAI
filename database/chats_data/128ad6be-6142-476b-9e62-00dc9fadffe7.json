@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "So tell me about yourself"
+    },
+    {
+      "role": "assistant",
+      "content": "Based on our previous conversations, I can provide a brief highlight-summary of your experience, education, the value you bring to an employer, and the reason you're looking forward to learning more about this next job and the opportunity to work with them.\n\nYou're a person who values memories and has a personal connection with pets, as you've shared about your dog, Moti. As for your professional background, I don't have specific information about your job history or education, but you seem to be interested in having a conversation about your career and finding a job that's a good fit for you.\n\nHere's a possible template you can use as a starting point for answering the \"Tell me about yourself\" question:\n\n\"I'm a dedicated and passionate individual with a strong interest in [industry/field]. With a background in [briefly mention any relevant experience or skills], I've developed a unique set of skills that enable me to [achieve specific goals or outcomes]. I'm excited about the opportunity to bring my skills and experience to a new role and contribute to the success of a company like this one. I'm particularly drawn to this company because [mention something you've learned about the company that resonates with you].\"\n\nFeel free to modify this template to fit your own experiences and interests, and don't hesitate to ask if you need further assistance!"
+    }
+  ]
+}

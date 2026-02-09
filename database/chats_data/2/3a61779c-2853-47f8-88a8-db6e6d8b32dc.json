@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "tell me about today's weather in delhi"
+    },
+    {
+      "role": "assistant",
+      "content": "Ved, according to the current weather information, the temperature in Delhi today is 23.05°C. The conditions are reported as haze, with a humidity of 33% and a wind speed of 2.06 m/s. The temperature also feels like 22.27°C."
+    }
+  ]
+}

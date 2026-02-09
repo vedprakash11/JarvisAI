@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- Overview pane: one summary of all insights -->
+<div id="paneOverview" class="pane active">
+  <div class="insight-cards">
+    <div class="insight-kpi"><div class="kpi-value">{{ usage.total_requests }}</div><div class="kpi-label">Total requests</div></div>
+    <div class="insight-kpi success"><div class="kpi-value">{{ insights.success_rate_pct }}%</div><div class="kpi-label">Success rate</div></div>
+    <div class="insight-kpi danger"><div class="kpi-value">{{ insights.error_rate_pct }}%</div><div class="kpi-label">Error rate</div></div>
+    <div class="insight-kpi"><div class="kpi-value">{% if usage.avg_latency_ms is not none %}{{ usage.avg_latency_ms|round(0) }}{% else %}—{% endif %}</div><div class="kpi-label">Avg latency (ms)</div></div>
+    <div class="insight-kpi"><div class="kpi-value">{{ usage.by_mode.general }}</div><div class="kpi-label">General</div></div>
+    <div class="insight-kpi"><div class="kpi-value">{{ usage.by_mode.realtime }}</div><div class="kpi-label">Realtime</div></div>
+  </div>
+  <div class="card summary-card">
+    <h2>Summary (last 24h)</h2>
+    <ul class="summary-list">
+      <li><strong>Health:</strong> <span class="{{ 'ok' if usage.total_requests and not usage.error_count else 'muted' }}">{{ insights.health_summary }}</span></li>
+      {% if usage.total_requests %}<li><strong>Status:</strong> <span class="muted">2xx {{ insights.status_2xx }} · 4xx {{ insights.status_4xx }} · 5xx {{ insights.status_5xx }}</span></li>{% endif %}
+      <li><strong>Peak:</strong> {% if insights.peak_hour_label %}<span class="highlight">{{ insights.peak_hour_label }}</span> ({{ insights.peak_hour_count }} req){% else %}<span class="muted">No hourly data</span>{% endif %}</li>
+      <li><strong>Latency:</strong> {% if usage.avg_latency_ms is not none and usage.latency_samples %}<span class="highlight">{{ usage.avg_latency_ms|round(0) }} ms</span> avg ({{ usage.latency_samples }} samples){% else %}<span class="muted">—</span>{% endif %}</li>
+      <li><strong>Traffic:</strong> General <span class="highlight">{{ usage.by_mode.general }}</span> ({{ insights.general_pct }}%) · Realtime <span class="highlight">{{ usage.by_mode.realtime }}</span> ({{ insights.realtime_pct }}%)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Status pane -->
+<div id="paneStatus" class="pane">
+  <div class="card">
+    <h2>System status</h2>
+    {% if status %}
+    <div class="grid">
+      <div class="stat">
+        <div class="value">{{ status.groq.keys_in_rotation or 0 }}</div>
+        <div class="label">Groq keys in rotation</div>
+      </div>
+      <div class="stat">
+        <div class="value">…{{ status.groq.last_used_key_suffix or '—' }}</div>
+        <div class="label">Last key used (suffix)</div>
+      </div>
+      <div class="stat">
+        <div class="value">{{ status.vector_store.doc_count or 0 }}</div>
+        <div class="label">Vector store docs</div>
+      </div>
+      <div class="stat">
+        <div class="value" style="font-size: 0.9rem;">{{ status.vector_store.last_rebuild_str or '—' }}</div>
+        <div class="label">Last rebuild</div>
+      </div>
+    </div>
+    <p class="meta">{{ status.groq.rate_limit_note or '' }}</p>
+    {% else %}
+    {% if status_error == 'unauthorized' %}
+    <p class="err">API status unavailable (unauthorized). Ensure the JarvisAI API is running (<code>python run.py</code>), then <a href="{{ url_for('logout') }}">log out and log in again</a> to refresh your token.</p>
+    {% else %}
+    <p class="err">Could not reach JarvisAI API at <code>{{ api_url }}</code>.</p>
+    <p class="meta">Start the API from the project root: <code>python run.py</code> (default port 8000). If the API runs on another host or port, set <code>JARVIS_API_URL</code> in your <code>.env</code> and restart the dashboard.</p>
+    {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<!-- Usage pane: packed charts -->
+<div id="paneUsage" class="pane usage-pack">
+  <div class="card card-compact">
+    <h2>Usage (last 24h)</h2>
+    <div class="grid grid-tight">
+      <div class="stat"><div class="value">{{ usage.total_requests }}</div><div class="label">Total</div></div>
+      <div class="stat"><div class="value ok">{{ usage.success_count }}</div><div class="label">2xx</div></div>
+      <div class="stat"><div class="value {% if usage.error_count %}err{% else %}ok{% endif %}">{{ usage.error_count }}</div><div class="label">Failed</div></div>
+      <div class="stat"><div class="value">{{ usage.by_mode.general }}</div><div class="label">General</div></div>
+      <div class="stat"><div class="value">{{ usage.by_mode.realtime }}</div><div class="label">Realtime</div></div>
+      <div class="stat"><div class="value">{{ usage.avg_latency_ms }} ms</div><div class="label">Latency</div></div>
+    </div>
+  </div>
+
+  <div class="charts-pack">
+    <div class="card card-compact chart-card-sm">
+      <h3>Answered vs failed</h3>
+      <div class="chart-wrap"><canvas id="successFailChart" height="140"></canvas></div>
+      <script>
+        (function() {
+          const success = {{ usage.success_count }};
+          const failed = {{ usage.error_count }};
+          new Chart(document.getElementById('successFailChart'), {
+            type: 'doughnut',
+            data: { labels: ['Answered', 'Failed'], datasets: [{ data: [success, failed], backgroundColor: ['rgba(63, 185, 80, 0.8)', 'rgba(248, 81, 73, 0.8)'], borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } }
+          });
+        })();
+      </script>
+    </div>
+    <div class="card card-compact chart-card-sm">
+      <h3>By mode</h3>
+      <div class="chart-wrap"><canvas id="modeChart" height="140"></canvas></div>
+      <script>
+        (function() {
+          const general = {{ usage.by_mode.general }};
+          const realtime = {{ usage.by_mode.realtime }};
+          new Chart(document.getElementById('modeChart'), {
+            type: 'doughnut',
+            data: { labels: ['General', 'Realtime'], datasets: [{ data: [general, realtime], backgroundColor: ['rgba(88, 166, 255, 0.8)', 'rgba(63, 185, 80, 0.8)'], borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } }
+          });
+        })();
+      </script>
+    </div>
+    {% if usage.sorted_latency_buckets %}
+    <div class="card card-compact chart-card-sm">
+      <h3>Latency</h3>
+      <div class="chart-wrap"><canvas id="latencyChart" height="100"></canvas></div>
+      <script>
+        (function() {
+          const data = {{ usage.sorted_latency_buckets | tojson }};
+          new Chart(document.getElementById('latencyChart'), {
+            type: 'bar',
+            data: { labels: data.map(d => d[0]), datasets: [{ label: 'Requests', data: data.map(d => d[1]), backgroundColor: 'rgba(88, 166, 255, 0.7)' }] },
+            options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { x: { beginAtZero: true }, y: { ticks: { font: { size: 10 } } } } }
+          });
+        })();
+      </script>
+    </div>
+    {% endif %}
+    {% if usage.by_status and usage.by_status|length > 0 %}
+    <div class="card card-compact chart-card-sm">
+      <h3>Status codes</h3>
+      <div class="chart-wrap"><canvas id="statusChart" height="100"></canvas></div>
+      <script>
+        (function() {
+          const data = {{ usage.by_status | tojson }};
+          const labels = Object.keys(data).sort();
+          const values = labels.map(k => data[k]);
+          const colors = values.map((_, i) => labels[i].startsWith('2') ? 'rgba(63, 185, 80, 0.7)' : 'rgba(248, 81, 73, 0.7)');
+          new Chart(document.getElementById('statusChart'), {
+            type: 'bar',
+            data: { labels, datasets: [{ label: 'Count', data: values, backgroundColor: colors }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { font: { size: 10 } } } } }
+          });
+        })();
+      </script>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if usage.sorted_hours %}
+  <div class="charts-pack charts-pack-2">
+    <div class="card card-compact chart-card-sm">
+      <h3>Requests by hour (UTC)</h3>
+      <div class="chart-wrap"><canvas id="hourChart" height="100"></canvas></div>
+      <script>
+        (function() {
+          const data = {{ usage.sorted_hours | tojson }};
+          const labels = data.map(d => d[0]);
+          new Chart(document.getElementById('hourChart'), {
+            type: 'bar',
+            data: {
+              labels,
+              datasets: [
+                { label: 'General', data: data.map(d => d[1].general), backgroundColor: 'rgba(88, 166, 255, 0.7)' },
+                { label: 'Realtime', data: data.map(d => d[1].realtime), backgroundColor: 'rgba(63, 185, 80, 0.7)' }
+              ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true, ticks: { maxRotation: 45, font: { size: 9 } } }, y: { stacked: true, beginAtZero: true } } }
+          });
+        })();
+      </script>
+    </div>
+    <div class="card card-compact chart-card-sm">
+      <h3>Success vs failed by hour</h3>
+      <div class="chart-wrap"><canvas id="successFailHourChart" height="100"></canvas></div>
+      <script>
+        (function() {
+          const data = {{ usage.sorted_hours | tojson }};
+          const labels = data.map(d => d[0]);
+          new Chart(document.getElementById('successFailHourChart'), {
+            type: 'line',
+            data: {
+              labels,
+              datasets: [
+                { label: 'Answered', data: data.map(d => d[1].success), borderColor: 'rgb(63, 185, 80)', fill: true, tension: 0.2 },
+                { label: 'Failed', data: data.map(d => d[1].errors), borderColor: 'rgb(248, 81, 73)', fill: true, tension: 0.2 }
+              ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxRotation: 45, font: { size: 9 } } }, y: { beginAtZero: true } } }
+          });
+        })();
+      </script>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Alerts pane (reminders & notifications; reminder voice auto-plays when new) -->
+<div id="paneAlerts" class="pane">
+  <div class="card">
+    <h2>Alerts & reminders</h2>
+    <p class="meta">When a reminder fires, a voice says &quot;You have a reminder: [message]&quot;. Keep this tab open and the Alerts pane visible to hear it, or click Play below.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Message</th>
+          <th>Source</th>
+          <th>Time</th>
+          <th>Play</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for n in notifications %}
+        <tr>
+          <td>{{ n.title or '—' }}</td>
+          <td class="query-cell" title="{{ n.body }}">{{ n.body[:80] }}{% if n.body|length > 80 %}…{% endif %}</td>
+          <td><code>{{ n.source }}</code></td>
+          <td>{{ n.created_at }}</td>
+          <td>
+            {% if n.audio_url %}
+            <audio controls preload="metadata" class="reminder-audio" data-created-at="{{ n.created_at }}" data-nid="{{ n.id }}" style="max-width: 180px; height: 32px;">
+              <source src="{{ url_for('notification_audio_proxy', nid=n.id) }}" type="audio/wav">
+            </audio>
+            {% else %}
+            —
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">No alerts yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<script>
+(function() {
+  var TWO_MINUTES_MS = 2 * 60 * 1000;
+  function tryAutoPlayReminder() {
+    var audios = document.querySelectorAll('#paneAlerts .reminder-audio');
+    var now = Date.now();
+    for (var i = 0; i < audios.length; i++) {
+      var el = audios[i];
+      var createdAt = el.getAttribute('data-created-at');
+      if (!createdAt) continue;
+      var t = new Date(createdAt.replace(' ', 'T')).getTime();
+      if (isNaN(t)) continue;
+      if (now - t <= TWO_MINUTES_MS && !el.dataset.autoPlayed) {
+        el.dataset.autoPlayed = '1';
+        el.play().catch(function() {});
+        return;
+      }
+    }
+  }
+  document.querySelectorAll('.nav-link[data-pane="alerts"]').forEach(function(link) {
+    link.addEventListener('click', function() {
+      setTimeout(tryAutoPlayReminder, 300);
+    });
+  });
+  if (document.getElementById('paneAlerts').classList.contains('active')) {
+    setTimeout(tryAutoPlayReminder, 500);
+  }
+})();
+</script>
+
+<!-- Daily brief pane (voice via Murf TTS) -->
+<div id="paneBrief" class="pane">
+  <div class="card">
+    <h2>Daily brief</h2>
+    {% if brief %}
+    <p class="meta">Brief for {{ brief.brief_date }}. Generated with weather, headlines, and Murf voice.</p>
+    <div class="brief-text" style="white-space: pre-wrap; line-height: 1.6; margin-bottom: 1rem;">{{ brief.text }}</div>
+    {% if brief.audio_url %}
+    <p><strong>Listen</strong></p>
+    <audio controls preload="metadata" style="max-width: 100%;">
+      <source src="{{ url_for('brief_audio_proxy') }}?date={{ brief.brief_date }}" type="audio/wav">
+      Your browser does not support the audio element.
+    </audio>
+    {% else %}
+    <p class="meta">No voice version (set MURF_API_KEY in .env and rebuild brief).</p>
+    {% endif %}
+    {% else %}
+    <p class="err">Could not load today’s brief. Ensure the JarvisAI API is running and you are logged in with an account that can call <code>GET /brief</code>.</p>
+    <p class="meta">The brief is generated on first request or by the scheduled daily job (see API BRIEF_HOUR).</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Activity pane -->
+<div id="paneActivity" class="pane">
+  <div class="card">
+    <h2>Recent requests</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Path</th>
+          <th>Mode</th>
+          <th>Tool</th>
+          <th>Query</th>
+          <th>IP</th>
+          <th>Status</th>
+          <th>Latency (ms)</th>
+          <th>Session</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in recent %}
+        <tr>
+          <td>{{ r.path }}</td>
+          <td>{{ r.mode }}</td>
+          <td><code>{{ r.tool }}</code></td>
+          <td class="query-cell" title="{{ r.query }}">{{ r.query }}</td>
+          <td>{{ r.client_ip }}</td>
+          <td class="{% if r.status_code >= 400 %}err{% else %}ok{% endif %}">{{ r.status_code }}</td>
+          <td>{{ r.latency_ms }}</td>
+          <td><code>{{ r.session_id }}</code></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8">No chat requests in log yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

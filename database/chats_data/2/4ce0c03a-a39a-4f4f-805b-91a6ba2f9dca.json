@@ -1,0 +1,12 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is temperature in Kanpur?"
+    },
+    {
+      "role": "assistant",
+      "content": "Ved, according to the current weather information, the temperature in Kanpur is around 23.96°C."
+    }
+  ]
+}
