@@ -166,3 +166,6 @@ JarvisAI/
 ## License
 
 Use as per your project requirements.
+
+<img width="955" height="470" alt="image" src="https://github.com/user-attachments/assets/1c1a7183-838d-4f56-8414-b35d775be68e" />
+
